@@ -105,10 +105,44 @@ class VanillaLSTM_TF:
                         a_prec_pos += prec_pos
                         a_recall_pos += recall_pos
 
-                    print('overall performance ')
+                    print('overall performance validation')
                     print("f1: %0.4f, precision: %0.4f, recall: %0.4f" % (a_f1_all / n_val_batches, a_prec_all / n_val_batches, a_recall_all / n_val_batches))
                     print('positive labels prediction')
                     print("f1: %0.4f, precision: %0.4f, recall: %0.4f" % (a_f1_pos / n_val_batches, a_prec_pos / n_val_batches, a_recall_pos / n_val_batches))
+
+
+            print('### testing on test data ###')
+            a_f1_all, a_prec_all, a_recall_all, a_f1_pos, a_prec_pos, a_recall_pos = 0., 0., 0., 0., 0., 0.
+            n_test_batches = int(len(test_dt[0])) // self.batch_size
+            for ind in range(0, n_test_batches - 1):
+                test_data = test_dt[0][ind * self.batch_size: (ind + 1) * self.batch_size]
+                test_label = test_dt[1][ind * self.batch_size: (ind + 1) * self.batch_size]
+                test_len = test_dt[2][ind * self.batch_size: (ind + 1) * self.batch_size]
+
+                feed_d = {self.xs_: test_data, self.ys_: test_label, self.x_seq_lens: test_len}
+                probs = sess.run([self.probs],  # _, cost, probs self.optimizer, self.cost, self.probs
+                                 feed_dict=feed_d)
+                # print(probs[0].shape, accracy.shape)
+                # print(np.argmax(probs[0], axis=1).shape)
+                prediction = np.argmax(probs[0], axis=1)
+                # print(prediction.shape, val_dt[1].shape)
+                f1_all, prec_all, recall_all, f1_pos, prec_pos, recall_pos = self.evaluate(prediction, test_label)
+
+                a_f1_all += f1_all
+                a_prec_all += prec_all
+                a_recall_all += recall_all
+
+                a_f1_pos += f1_pos
+                a_prec_pos += prec_pos
+                a_recall_pos += recall_pos
+
+            print('overall performance validation')
+            print("f1: %0.4f, precision: %0.4f, recall: %0.4f" % (
+            a_f1_all / n_test_batches, a_prec_all / n_test_batches, a_recall_all / n_test_batches))
+            print('positive labels prediction')
+            print("f1: %0.4f, precision: %0.4f, recall: %0.4f" % (
+            a_f1_pos / n_test_batches, a_prec_pos / n_test_batches, a_recall_pos / n_test_batches))
+
 
     def evaluate(self, predict, true):
         f1_all = f1_score(y_true=true, y_pred=predict, average='macro')
